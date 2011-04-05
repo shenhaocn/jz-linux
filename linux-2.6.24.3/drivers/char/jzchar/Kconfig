@@ -16,6 +16,10 @@ config JZ_CIM
 	depends on JZCHAR
 	select JZ_CAMERA_SENSOR
 
+config JZ_GPIO_CIM
+	tristate 'JzSOC Camera Interface Module (CIM for GPIO) support'
+	depends on JZCHAR
+
 config JZ_TPANEL_ATA2508
 	tristate 'JzSOC MPEG4 TOUCH PANEL ATA2508 support'
 	depends on JZCHAR

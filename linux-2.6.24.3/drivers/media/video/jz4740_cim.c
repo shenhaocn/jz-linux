@@ -91,6 +91,7 @@ typedef struct
 #define IOCTL_GET_IMG_PARAM	3	// arg type: img_param_t *
 #define IOCTL_GET_CIM_CONFIG	4	// arg type: cim_config_t *
 #define IOCTL_TEST_CIM_RAM	5	// no arg type *
+#define IOCTL_START_CIM		6       // arg type: void
 
 /*
  * CIM DMA descriptor
@@ -134,6 +135,7 @@ static void cim_image_area(img_param_t *c) {
 }
 #endif
 
+
 static void cim_config(cim_config_t *c)
 {
 	REG_CIM_CFG = c->cfg;
@@ -172,6 +174,8 @@ static int cim_start_dma(char *ubuf)
 	__cim_unreset_rxfifo();
 	__cim_enable_dma();	// enable dma
 	__cim_enable();
+    /* use ccir656 interlace mode by shenhao */
+	//__cim_enable_ccir656_interlace_mode();
 
 	dprintk("__cim_enable\n");
 //	while(1) {
@@ -368,6 +372,7 @@ static int cim_open(struct inode *inode, struct file *filp)
 
 static int cim_release(struct inode *inode, struct file *filp)
 {
+	dprintk("%s, %s, %d\n", __FILE__, __FUNCTION__, __LINE__);
 	cim_fb_destroy();
 	cim_stop();
 
@@ -397,6 +402,24 @@ static int cim_ioctl(struct inode *inode, struct file *filp, unsigned int cmd, u
 	{
 		img_param_t i;
 		return copy_to_user(argp, &i, sizeof(img_param_t)) ? -EFAULT : 0;
+	}
+	case IOCTL_STOP_CIM:
+	{
+		__cim_disable_dma();	// enable dma
+		__cim_disable();
+
+//		cim_fb_destroy();
+		return 0;
+	}
+	case IOCTL_START_CIM:
+	{
+		__cim_set_da(virt_to_phys(cim_dev->frame_desc));
+		__cim_clear_state();	// clear state register
+		__cim_reset_rxfifo();	// resetting rxfifo
+		__cim_unreset_rxfifo();
+		__cim_enable_dma();	// enable dma
+		__cim_enable();
+		return 0;
 	}
 	case IOCTL_SET_IMG_PARAM:
 	{
@@ -536,6 +559,9 @@ static irqreturn_t cim_irq_handler(int irq, void *dev_id)
 		dprintk("EOF interrupt wake up!\n");
 	}
 
+
+
+
 	if (state & CIM_STATE_DMA_STOP) {
 		// Got a frame, wake up wait routine
 		__cim_disable_dma();
@@ -554,8 +580,16 @@ static irqreturn_t cim_irq_handler(int irq, void *dev_id)
  	return IRQ_HANDLED;
 }
 
+/*Camera gpio init, different operationg according sensor*/
+static void camera_gpio_init(void) {
+
+	__gpio_as_cim();
+	__gpio_as_i2c();
+	
+}
 static int v4l_device_init(void)
 {
+	camera_gpio_init();
 	cim_dev = kzalloc(sizeof(struct cim_device), GFP_KERNEL);
 	if (!cim_dev) return -ENOMEM;
 	cim_dev->jz_cim = video_device_alloc();

@@ -5,6 +5,7 @@ obj-$(CONFIG_JZCHAR)		+= jzchars.o
 
 obj-$(CONFIG_JZ_SCC)		+= scc.o
 obj-$(CONFIG_JZ_CIM)		+= cim.o
+obj-$(CONFIG_JZ_GPIO_CIM)		+= cim_gpio.o
 obj-$(CONFIG_JZ_TPANEL_ATA2508)	+= ata2508.o
 obj-$(CONFIG_JZ_CAMERA_SENSOR)	+= sensor.o
 obj-$(CONFIG_JZ_I2C_EEPROM)	+= eeprom.o
